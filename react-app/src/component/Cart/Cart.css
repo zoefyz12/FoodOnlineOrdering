@@ -1,0 +1,23 @@
+.img {
+    width: 100px;
+    height: 70px;
+}
+.pad{
+    text-align: right;
+}
+.padButtom{
+    padding-bottom: 40px;
+}
+.pad0 {
+    padding-left: 100px;
+}
+.pad1{
+    padding-left: 600px;
+}
+.pad2{
+    padding-left: 50px;
+}
+.cell{
+    margin-left: 0px;
+    margin-right: 0px;
+}
