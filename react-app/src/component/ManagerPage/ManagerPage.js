@@ -8,42 +8,61 @@ import Dialog from "@material-ui/core/Dialog/Dialog";
 import DialogContent from "@material-ui/core/DialogContent/DialogContent";
 import logo from "../images/ezgif-1-e382b6df9dbb.png";
 import userService from "../../common/services/User/UserService";
+import UserStoreService from "../../common/services/User/UserStoreService";
 
 class ManagerPage extends Component {
     state = {
-        rows: ['1','1','1'],
-        name: ['Boise POLARIS® Premium Multipurpose Paper, Letter Paper Size, FSC® Certified, White, 500 Sheets Per Ream, Case Of 10 Reams',
-            'Realspace® Magellan Performance Collection L-Shaped Desk, Espresso Realspace® Magellan Performance Collection L-Shaped Desk, Espresso',
-            'Lenovo® IdeaPad™ 530S Laptop, 14" Screen, AMD Ryzen™ 5, 8GB Memory, 256GB Solid State Drive, Windows® 10 Home'],
-        pic: ['https://officedepot.scene7.com/is/image/officedepot/196697_p_boise_polaris_premium_multipurpose_paper?$OD-Med$',
-            'https://officedepot.scene7.com/is/image/officedepot/956652_p_realspace_magellan_performance_collection_l_desk?$OD-Med$',
-            'https://officedepot.scene7.com/is/image/officedepot/2553990_o01_lenovo_ideapad_530s_laptop?$OD-Med$'],
-        detailItem:['burger1 * 1 burger * 2 burger * 3'],
-        OrderTime: ['04/27/2019 15:43','04/20/2019 24:35','04/14/2019 09:51'],
-        column: ['1','2','3'],
+
         open: false,
         scroll: 'body',
+        orderList: [],
     };
     componentDidMount() {
 
+
+
+        if(UserStoreService.getToken() !== undefined) {
 
         userService.manager_display().then((data) => {
 
             console.log(data);
             //
-            // this.setState({nameData: data, allData: UserStoreService.getAllItem(), itemIds: itemIds});
+             this.setState({orderList: data});
             // console.log(this.state.allData, "ComponentDidmMount allData");
             // console.log(this.state.nameData);
         }).catch((error) => {
-            alert(error.message);
+          //  alert(error.message);
         });
 
         // fetch data from backend and assign all to displayCare
     }
-    handleRemoveRow = () => {
-        this.setState({
-            rows: this.state.rows.slice(0, -1)
+    else{
+        alert("Please Log in")
+        }
+
+    }
+    handleRemoveRow = (idx, id) => {
+
+        let datas = this.state.orderList[idx];
+
+        let body = {
+            order_id: id
+        };
+
+        userService.manager_pickup(JSON.stringify(body)).then((data) => {
+
+            console.log(data);
+            this.setState({
+                orderList: this.state.orderList.filter(function (row) {
+                    return row !== datas;
+                })
+            });
+            alert("Pick up order successfully")
+        }).catch((error) => {
+            alert(error.message);
         });
+
+
     };
     handleOpen = scroll => () => {
         this.setState({open: true, scroll});
@@ -61,6 +80,7 @@ class ManagerPage extends Component {
                         <Nav className="float-right">
                             <Nav.Link >Hi, Manager</Nav.Link>
                             <Nav.Link onClick={this.handleOpen('body')}>Add Item</Nav.Link>
+                            <Nav.Link href="/">Log Out</Nav.Link>
                         </Nav>
                     </Navbar>
                     <Dialog
@@ -72,7 +92,7 @@ class ManagerPage extends Component {
                     >
                         <DialogContent>
 
-                        <AddItem/>
+                        <AddItem closeModal={this.handleClose}/>
                         </DialogContent>
                     </Dialog>
                     <div className="row clearfix">
@@ -90,18 +110,18 @@ class ManagerPage extends Component {
                                 </tr>
                                 </thead>
                                 <tbody>
-                                {this.state.rows.map((item, idx) => (
+                                {this.state.orderList.map((item, idx) => (
                                     <tr id="addr0" key={idx}>
-                                        <td>{idx}</td>
+                                        <td>{item.order_id}</td>
                                         <td>
-                                            {this.state.detailItem}
+                                            {item.detail}
                                         </td>
                                         <td>
-                                            {this.state.OrderTime[idx]}
+                                            {item.order_time}
                                         </td>
                                         <td>
                                             <button
-                                                onClick={this.handleRemoveRow}
+                                                onClick={() => this.handleRemoveRow(idx, item.order_id)}
                                                 className=" btn btn-danger"
                                             >
                                                 Pick up

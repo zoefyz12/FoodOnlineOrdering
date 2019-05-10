@@ -18,8 +18,16 @@ class Login extends React.Component {
             UserStoreService.setUser(data);
             console.log(data, "data");
             console.log(UserStoreService.getToken(), "token");
-            this.props.parentData.history.push('/');
             closeModal(true);
+            if(data.user_type === "manager")
+            {
+                this.props.parentData.history.push('/manager')
+            }
+            else
+            {
+                this.props.parentData.history.push('/');
+            }
+
 
             event.preventDefault();
         }).catch((error) => {

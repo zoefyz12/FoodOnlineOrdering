@@ -1,11 +1,11 @@
 import os
-from flask import Flask, jsonify, render_template, request, send_from_directory, redirect
+from flask import Flask, jsonify, render_template, request, send_from_directory
 from flask_jwt_extended import create_access_token, JWTManager, get_jwt_identity, get_raw_jwt, jwt_required
 from flask_bcrypt import Bcrypt
 from pathlib import Path
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime,timedelta
+from datetime import datetime, timedelta
 f_jwt = JWTManager()
 
 
@@ -33,6 +33,31 @@ CORS(app)
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 f_jwt.init_app(app)
+
+
+class Review(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer)
+    order_id = db.Column(db.Integer)
+    item_id = db.Column(db.Integer)
+    comment = db.Column(db.String(1000), nullable=False)
+    reviewable = db.Column(db.Boolean)
+    reviewtime = db.Column(db.DateTime)
+
+    def __init__(self, user_id=None, order_id=None, item_id=None, comment=None, reviewable=None, reviewtime=None):
+        self.user_id = user_id
+        self.order_id = order_id
+        self.item_id = item_id
+        self.comment = comment
+        self.reviewable = reviewable
+        self.reviewtime = reviewtime
+
+    def __repr__(self):
+        return '<Order %r>' % self.id
+
+    def to_dict(self):
+        result = {"user_id": self.user_id, "order_id": self.order_id, "item_id": self.item_id, "comment": self.comment, "reviewable": self.reviewable, "reviewtime": self.reviewtime}
+        return result
 
 
 class Itemsinorder(db.Model):
@@ -204,7 +229,7 @@ def login_user():
         return jsonify({'msg': 'Invalid username/password'}), 409
 
     token = create_access_token(identity={'username': username})
-    return jsonify({'access_token': token}), 201
+    return jsonify({"access_token": token, "user_type": client.user_type}), 201
 
 
 @app.route('/reset', methods=['POST'])
@@ -316,24 +341,34 @@ def display_detail():
         item_id = data["item_id"]
     except KeyError:
         return jsonify({'msg': 'Bad Request, missing/misspelled key'}), 400
-
+    reviews = []
+    reviewsresult = Review.query.filter_by(item_id=item_id).all()
+    for review in reviewsresult:
+        user = User.query.filter_by(id=review.user_id).first()
+        reviews.append({"username": user.username, "reviewtime": review.reviewtime,  "comment": review.comment})
     item = Item.query.filter_by(id=item_id).first()
     if item is None:
         return jsonify({'msg': 'Item is not existed'}), 400
     else:
-        return jsonify(item.to_dict()), 200
+
+        return jsonify({"item_detail": item.to_dict(), "review": reviews}), 200
 
 
-@app.route('/setupitems', methods=['POST'])
-# @jwt_required
+@app.route('/manager/setupitems', methods=['POST'])
+@jwt_required
 def set_up_items():
+    current_user = get_jwt_identity()['username']
+    client = User.query.filter_by(username=current_user).first()
+    if not client or client.user_type != "manager":
+        return jsonify({'msg': 'client not found or the current user is not manager'}), 409
+
     data = request.get_json()
     if not data:
         return jsonify({'msg': 'Bad Request, no data passed'}), 400
-    name = data["name"].lower()
+    name = data["name"]
     price = data["price"]
-    description = data["description"].lower()
-    ingredient = data["ingredient"].lower()
+    description = data["description"]
+    ingredient = data["ingredient"]
     cal = data['cal']
     rating = data["rating"]
     picurl = data["picurl"].lower()
@@ -362,7 +397,7 @@ def get_all_orderhistory():
         return jsonify({'msg': "This client's order does not found"}), 409
     userorders = []
     for order in orders:
-        userorders.insert(0, {'id': order.id, 'status': order.status, 'time': order.time, 'total': order.total})
+        userorders.insert(0, {'id': order.id, 'status': order.status, 'time': order.time, 'total': order.total, "ifcancelable": order.ifcancelable})
     return jsonify(userorders), 200
 
 
@@ -392,8 +427,13 @@ def display_order_detail():
     orderitems = []
     for itemid in itemsid:
         item = Item.query.filter_by(id=itemid.item_id).first()
-        orderitems.append({'name': item.name, 'price': item.price, 'quantity': itemid.quantity,
-                           'picurl': item.picurl})
+        review = Review.query.filter_by(user_id=client.id, order_id=order_id, item_id=itemid.item_id).first()
+        if not review:
+            orderitems.append({"item_id": item.id, 'name': item.name, 'price': item.price, 'quantity': itemid.quantity,
+                               'picurl': item.picurl, "reviewable": True})
+        else:
+            orderitems.append({"item_id": item.id, "name": item.name, "price": item.price, "quantity": itemid.quantity,
+                           "picurl": item.picurl, "reviewable": review.reviewable})
 
     return jsonify({"order_status": order.status, "ifcancellable": order.ifcancelable, "orderdetail": orderitems}), 200
 
@@ -416,8 +456,8 @@ def order_cancel():
         return jsonify({'msg': 'Bad Request, missing/misspelled key'}), 400
 
     detectorderstatus()
-    order = Order.query.filter_by(id=order_id).first()
-    if not order or order.ifcancelable:
+    order = Order.query.filter_by(id=order_id, ifcancelable=True).first()
+    if not order or not order.ifcancelable:
         return jsonify({'msg': "This order does not exist or can not be cancelled"}), 409
     else:
         db.session.delete(order)
@@ -426,7 +466,11 @@ def order_cancel():
         for itemid in itemsid:
             db.session.delete(itemid)
             db.session.commit()
-
+    reviewsinorder = Review.query.filter_by(user_id=client.id, order_id=order_id).all()
+    if reviewsinorder:
+        for reviewitem in reviewsinorder:
+            db.session.delete(reviewitem)
+        db.session.commit()
     return jsonify({'msg': "This order was cancelled successfully"}), 200
 
 
@@ -481,6 +525,9 @@ def manager_pickup():
         order.ifpickup = True
         order.status = "completed"
         db.session.commit()
+        reviews = Review.query.filter_by(user_id=client.id, order_id=order_id).all()
+        for review in reviews:
+            review.reviewable = True
     return jsonify({'msg': "Order pick up successfully"}), 200
 
 
@@ -498,8 +545,9 @@ def user_shoppingcart():
     itemsinfo = []
     for itemid in itemsid:
         item = Item.query.filter_by(id=itemid.item_id).first()
-        itemsinfo.append({"item_id": item.id, "picurl": item.picurl, "name": item.name, "description": item.description, "price": item.price})
-    return jsonify(itemsinfo), 200
+        itemsinfo.append({"item_id": item.id, "picurl": item.picurl, "name": item.name, "description": item.description, "price": item.price, "cal": item.cal, "quantity": itemid.quantity})
+
+    return jsonify(itemsinfo), 201
 
 
 @app.route('/auth/shoppingcarttotal', methods=['GET'])
@@ -615,6 +663,9 @@ def shoppingcart_placeorder():
         iteminorder = Itemsinorder(neworder.id, itemid.item_id, itemid.quantity)
         db.session.add(iteminorder)
         db.session.commit()
+        review = Review(client.id, neworder.id, itemid.item_id, "", False, ordertime)
+        db.session.add(review)
+        db.session.commit()
 
     for itemid in itemsid:
         db.session.delete(itemid)
@@ -654,7 +705,53 @@ def delete_order():
         for itemid in itemsid:
             db.session.delete(itemid)
             db.session.commit()
+
+    reviewsinorder = Review.query.filter_by(user_id=client.id, order_id=order_id).all()
+    if reviewsinorder:
+        for reviewitem in reviewsinorder:
+            db.session.delete(reviewitem)
+        db.session.commit()
     return jsonify({"msg": "Successfully deleted order"}), 200
+
+
+@app.route('/auth/getreviewinfo', methods=['POST'])
+@jwt_required
+def get_reviewinfo():
+    current_user = get_jwt_identity()['username']
+    client = User.query.filter_by(username=current_user).first()
+    if not client:
+        return jsonify({'msg': 'client not found'}), 409
+
+    data = request.get_json()
+    if not data:
+        return jsonify({'msg': 'Bad Request, no data passed'}), 400
+
+    try:
+        order_id = data["order_id"]
+        item_id = data["item_id"]
+        comment = data["comment"]
+    except KeyError:
+        return jsonify({'msg': 'Bad Request, missing/misspelled key'}), 400
+
+    order = Order.query.filter_by(id=order_id).first()
+    if not order:
+        return jsonify({'msg': 'The order is not found'}), 400
+    else:
+        if order.status != "completed":
+            return jsonify({'msg': 'The order is not completed, you can not review'}), 400
+
+    review = Review.query.filter_by(user_id=client.id, order_id=order_id, item_id=item_id).first()
+
+    reviewtime = datetime.now()
+    if not review:
+        return jsonify({'msg': "You don't have the item in this order"}), 400
+    else:
+        review.comment = comment
+        review.reviewable = False
+        review.reviewtime = reviewtime
+        db.session.commit()
+
+    return jsonify({'msg': "Review summitted"}), 200
 
 
 if __name__ == '__main__':

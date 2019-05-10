@@ -1,5 +1,5 @@
 /* Container needed to position the overlay. Adjust the width as needed */
-.container {
+.aboutContainer {
     position: relative;
     width: 50%;
 }

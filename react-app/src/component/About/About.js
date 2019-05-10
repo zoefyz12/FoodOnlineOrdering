@@ -20,7 +20,7 @@ class About extends Component {
                     </Nav>
                 </Navbar>
 
-                <div className="container">
+                <div className="container aboutContainer">
                     <img  width="1200" height="800" src={logo} alt="Avatar" className="image"/>
                     <div className="overlay">
                         <div className="text">

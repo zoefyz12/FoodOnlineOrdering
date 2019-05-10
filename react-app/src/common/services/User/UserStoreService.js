@@ -36,6 +36,12 @@ class UserStoreService {
     setTotalPrice(totalPrice) {
         this.totalPrice = totalPrice;
     }
+    setUserOrderHistory(orderHistory) {
+        this.orderHistory = orderHistory;
+    }
+    getUserOrderHistory(){
+        return this.orderHistory;
+    }
 }
 
 export default new UserStoreService();

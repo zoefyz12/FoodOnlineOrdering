@@ -13,18 +13,6 @@ class UserProfile extends Component {
         lname: '',
         email: '',
         phoneNumber:'',
-        orderId: '000001',
-        orderStatus: 'Picked',
-        date: '04/08/2019',
-        totalPrice: '$10.47',
-        ordername: ['NEW Quarter Pounder®* with Cheese Bacon',
-            'NEW Quarter Pounder®* Deluxe',
-            'Quarter Pounder®* with Cheese'],
-        pic: ['https://www.mcdonalds.com/content/dam/usa/documents/fresh-beef/qpc-bacon.jpg',
-            'https://www.mcdonalds.com/content/dam/usa/documents/fresh-beef/qpc-deluxe.jpg',
-            'https://www.mcdonalds.com/content/dam/usa/documents/fresh-beef/qpc.jpg'],
-        rows: ['1','1','1'],
-        price:['$2.69','$4.29','$3.49'],
 
         orderHistory: [],
 
@@ -48,7 +36,8 @@ class UserProfile extends Component {
                 console.log(data);
 
                 this.setState({orderHistory: data});
-             //   console.log(this.state.orderHistory, "orderHistory")
+                UserStoreService.setUserOrderHistory(data);
+                console.log(UserStoreService.getUserOrderHistory(), "orderHistory")
             }).catch((error) => {
                 alert(error.message);
             });
@@ -68,7 +57,7 @@ class UserProfile extends Component {
         return (<div className="bgnew">
 
 
-            <div className="container">
+            <div className="UserProfileContainer container ">
                 <img className="rounded mx-auto d-block logogo" src={logo}/>
 
                 <Navbar variant="light">

@@ -221,6 +221,54 @@ class UserService {
             return resp.json();
         });
     }
+    manager_pickup(postBody) {
+        let url = this.endpoint + '/auth/managerpickup';
+        return fetch(url, {
+            method: 'POST',
+            body: postBody,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + UserStoreService.getToken()
+            }
+        }).then((resp) => {
+            if (!resp.ok) {
+                throw Error('Cannot pick up order');
+            }
+            return resp.json();
+        });
+    }
+    get_reviewinfo(postBody) {
+        let url = this.endpoint + '/auth/getreviewinfo';
+        return fetch(url, {
+            method: 'POST',
+            body: postBody,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + UserStoreService.getToken()
+            }
+        }).then((resp) => {
+            if (!resp.ok) {
+                throw Error('Cannot add review. Please wait until order complete.');
+            }
+            return resp.json();
+        });
+    }
+    set_up_items(postBody) {
+        let url = this.endpoint + '/manager/setupitems';
+        return fetch(url, {
+            method: 'POST',
+            body: postBody,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + UserStoreService.getToken()
+            }
+        }).then((resp) => {
+            if (!resp.ok) {
+                throw Error('Cannot add item.');
+            }
+            return resp.json();
+        });
+    }
 
 
 }

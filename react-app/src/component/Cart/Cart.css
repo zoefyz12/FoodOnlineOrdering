@@ -9,10 +9,10 @@
     padding-bottom: 40px;
 }
 .pad0 {
-    padding-left: 100px;
+    padding-left: 300px;
 }
 .pad1{
-    padding-left: 600px;
+    padding-left: 900px;
 }
 .pad2{
     padding-left: 50px;
@@ -20,4 +20,7 @@
 .cell{
     margin-left: 0px;
     margin-right: 0px;
+}
+.cartInline{
+    display: inline-block;
 }

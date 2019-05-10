@@ -20,19 +20,20 @@ class Header extends Component {
         allData:[],
         open: false,
         selectedMeun: null,
-        url: ['https://www.mcdonalds.com/content/dam/usa/documents/fresh-beef/qpc-bacon.jpg',
-            'https://www.mcdonalds.com/content/dam/usa/documents/fresh-beef/qpc-deluxe.jpg',
-            'https://www.mcdonalds.com/content/dam/usa/documents/fresh-beef/qpc.jpg',
-            'https://www.mcdonalds.com/content/dam/usa/documents/fresh-beef/qpc-double.jpg',
-            'https://www.mcdonalds.com/content/dam/usa/documents/fresh-beef/smokehouse.jpg',
-            'https://www.mcdonalds.com/content/dam/usa/documents/fresh-beef/smokehouse-double.jpg'],
-        name: ['NEW Quarter Pounder®* with Cheese Bacon',
-            'NEW Quarter Pounder®* Deluxe',
-            'Quarter Pounder®* with Cheese',
-            'Double Quarter Pounder®* with Cheese',
-            'Bacon Smokehouse Burger',
-            'Double Bacon Smokehouse Burger'],
-        price: ['$2.69', '$4.29', '$4.59', '$5.49', '$3.59', '$4.59']
+        // url: ['https://www.mcdonalds.com/content/dam/usa/documents/fresh-beef/qpc-bacon.jpg',
+        //     'https://www.mcdonalds.com/content/dam/usa/documents/fresh-beef/qpc-deluxe.jpg',
+        //     'https://www.mcdonalds.com/content/dam/usa/documents/fresh-beef/qpc.jpg',
+        //     'https://www.mcdonalds.com/content/dam/usa/documents/fresh-beef/qpc-double.jpg',
+        //     'https://www.mcdonalds.com/content/dam/usa/documents/fresh-beef/smokehouse.jpg',
+        //     'https://www.mcdonalds.com/content/dam/usa/documents/fresh-beef/smokehouse-double.jpg'],
+        // name: ['NEW Quarter Pounder®* with Cheese Bacon',
+        //     'NEW Quarter Pounder®* Deluxe',
+        //     'Quarter Pounder®* with Cheese',
+        //     'Double Quarter Pounder®* with Cheese',
+        //     'Bacon Smokehouse Burger',
+        //     'Double Bacon Smokehouse Burger'],
+        // price: ['$2.69', '$4.29', '$4.59', '$5.49', '$3.59', '$4.59']
+        logout: userStoreService.isLoggedin()
     };
 
 
@@ -49,6 +50,7 @@ class Header extends Component {
     // };
 
     componentDidMount() {
+        window.scrollTo(0, 0)
         this.setState({
             selectedMeun: document.getElementById('all')
         });
@@ -77,10 +79,12 @@ class Header extends Component {
         let userStatus = 'Login';
         if (login) {
             userStatus = 'Order History';
+
         }
         this.setState({
             userStatus,
-            open: false
+            open: false,
+            logout: true
         });
     };
 
@@ -149,6 +153,8 @@ class Header extends Component {
                             <li><a  onClick={this.handleOpen} >{this.state.userStatus}</a></li>
                             <li><a  onClick={() => this.props.history.push('/cart')}>Shopping Cart</a></li>
                             <li><a onClick={() => this.props.history.push('/about')}>About Us</a></li>
+                            {this.state.logout &&
+                            <li><a href="/">Log Out</a></li>}
 
                         </ul>
                     </Nav>
